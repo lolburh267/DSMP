@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Donut SMP - Thống Kê Farm</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://github.com/DonutNetwork.png">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts: Be Vietnam Pro & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-base: #060a12;
+            --bg-sidebar: #090e17;
+            --bg-card: #0e1524;
+            --bg-card-sub: #131c30;
+            --accent-cyan: #00d2ff;
+            --accent-cyan-glow: rgba(0, 210, 255, 0.25);
+            --accent-cyan-bg: rgba(0, 210, 255, 0.08);
+            --accent-green: #10b981;
+            --accent-yellow: #fbbf24;
+            --accent-red: #ef4444;
+            --text-main: #e2e8f0;
+            --text-muted: #64748b;
+            --text-title: #94a3b8;
+            --border-line: #182337;
+            
+            --sidebar-collapsed: 72px;
+            --sidebar-expanded: 250px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background-color: var(--bg-base); 
+            color: var(--text-main); 
+            font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Khóa PIN */
+        #login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #060a12;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999999;
+            padding: 20px;
+        }
+        .login-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            padding: 32px 24px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+            max-width: 340px;
+            width: 100%;
+        }
+        .login-box h2 {
+            color: var(--accent-cyan);
+            font-size: 1.25rem;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+        .login-box p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 24px;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 14px;
+            background: #060a12;
+            border: 1px solid #1e293b;
+            border-radius: 10px;
+            color: var(--accent-cyan);
+            font-size: 1.4rem;
+            text-align: center;
+            letter-spacing: 6px;
+            outline: none;
+            margin-bottom: 18px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .login-box input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 14px var(--accent-cyan-glow);
+        }
+        .login-box button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #00d2ff, #0077ff);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 4px 14px rgba(0, 119, 255, 0.4);
+            font-family: 'Be Vietnam Pro', sans-serif;
+        }
+
+        /* CUSTOM MODAL */
+        #custom-confirm-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(4, 7, 13, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999998;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        #custom-confirm-modal.show {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-card {
+            background: linear-gradient(145deg, #0f1728, #0a0f1d);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            border-radius: 20px;
+            padding: 28px 24px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 25px rgba(0, 210, 255, 0.15);
+            transform: scale(0.92) translateY(10px);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #custom-confirm-modal.show .modal-card {
+            transform: scale(1) translateY(0);
+        }
+        .modal-icon-wrap {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 16px auto;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid rgba(0, 210, 255, 0.3);
+            box-shadow: 0 0 18px rgba(0, 210, 255, 0.25);
+        }
+        .modal-icon-wrap.danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 18px rgba(239, 68, 68, 0.25);
+        }
+        .modal-title {
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
+        }
+        .modal-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+        .modal-btn-group {
+            display: flex;
+            gap: 12px;
+        }
+        .modal-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            transition: all 0.2s ease;
+        }
+        .btn-cancel {
+            background: #151f33;
+            color: #94a3b8;
+            border: 1px solid #202e47;
+        }
+        .btn-cancel:hover {
+            background: #1c2b47;
+            color: #f1f5f9;
+        }
+        .btn-confirm {
+            background: linear-gradient(135deg, #00d2ff, #0077ff);
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(0, 119, 255, 0.4);
+        }
+        .btn-confirm:hover {
+            box-shadow: 0 4px 20px rgba(0, 210, 255, 0.6);
+            transform: translateY(-1px);
+        }
+        .btn-confirm.danger {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+        }
+        .btn-confirm.danger:hover {
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.6);
+            transform: translateY(-1px);
+        }
+
+        /* Toast thông báo */
+        #toast-notice {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #0f1728;
+            border: 1px solid var(--accent-cyan);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 210, 255, 0.25);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 999999;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #toast-notice.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* SIDEBAR THỤT THÒ */
+        .sidebar {
+            width: var(--sidebar-collapsed);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-line);
+            padding: 18px 12px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 1000;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+        }
+
+        .sidebar:hover {
+            width: var(--sidebar-expanded);
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding-bottom: 16px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-line);
+            width: 100%;
+        }
+        .brand-logo-frame {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 14px;
+            border: 2px solid #00d2ff;
+            box-shadow: 0 0 16px rgba(0, 210, 255, 0.45), inset 0 0 8px rgba(0, 210, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #091322;
+            flex-shrink: 0;
+        }
+        .brand-logo-img {
+            width: 32px;
+            height: 32px;
+            object-fit: cover;
+        }
+
+        .brand-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #00d2ff, #818cf8, #f43f5e, #00d2ff);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 6s ease infinite;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .sidebar:hover .brand-title {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .nav-group-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 10px 6px 6px 6px;
+            opacity: 0;
+            transform: translateX(-8px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .sidebar:hover .nav-group-title {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .nav-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            height: 48px;
+            min-height: 48px;
+            border-radius: 14px;
+            color: #94a3b8;
+            background: transparent;
+            border: 1px solid transparent;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            width: 100%;
+            padding: 0;
+            outline: none;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .nav-btn .icon {
+            width: 48px;
+            min-width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.25s ease;
+        }
+        .nav-btn .icon svg {
+            width: 22px;
+            height: 22px;
+            display: block;
+            transition: transform 0.25s ease, filter 0.25s ease;
+        }
+
+        .nav-btn .nav-text {
+            opacity: 0;
+            padding-left: 6px;
+            transform: translateX(-10px);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .sidebar:hover .nav-btn .nav-text {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .nav-btn:hover {
+            color: #ffffff;
+            background: rgba(0, 210, 255, 0.08);
+            border-color: rgba(0, 210, 255, 0.35);
+            box-shadow: 0 0 16px rgba(0, 210, 255, 0.15);
+        }
+        .nav-btn:hover .icon svg {
+            transform: scale(1.15);
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+        .nav-btn:active {
+            transform: scale(0.96);
+        }
+
+        .nav-btn.active {
+            background: #0c1a2d;
+            border: 1px solid #00d2ff;
+            color: #00d2ff;
+            box-shadow: 0 0 18px rgba(0, 210, 255, 0.25);
+        }
+        .nav-btn.active .icon svg {
+            transform: scale(1.08);
+            filter: drop-shadow(0 0 6px #00d2ff);
+        }
+
+        /* MAIN CONTENT */
+        .content-area {
+            flex-grow: 1;
+            margin-left: var(--sidebar-collapsed);
+            padding: 24px 32px;
+            min-width: 0;
+        }
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); width: var(--sidebar-expanded); }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .sidebar.mobile-open .brand-title,
+            .sidebar.mobile-open .nav-group-title,
+            .sidebar.mobile-open .nav-btn .nav-text {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            .content-area { margin-left: 0; padding: 16px; }
+        }
+
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .tab-content.active-tab {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            opacity: 1;
+            transform: translateY(0);
+            animation: tabFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes tabFadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .neon-font {
+            font-family: 'JetBrains Mono', monospace !important;
+            letter-spacing: -0.5px;
+            font-variant-numeric: tabular-nums;
+        }
+        .neon-cyan-glow {
+            color: #00d2ff !important;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+        }
+        .neon-green-glow {
+            color: #10b981 !important;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+        }
+        .neon-yellow-glow {
+            color: #fbbf24 !important;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-line);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .header-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .mobile-toggle {
+            display: none;
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        @media (max-width: 900px) {
+            .mobile-toggle { display: block; }
+        }
+
+        .view-heading {
+            font-size: 1.55rem;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .heading-terminal {
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 10px rgba(0, 242, 254, 0.35));
+        }
+
+        .heading-cashout {
+            background: linear-gradient(135deg, #ffe259 0%, #ffa751 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 10px rgba(255, 167, 81, 0.35));
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .live-badge {
+            background: rgba(0, 210, 255, 0.1);
+            border: 1px solid #00d2ff;
+            color: #00d2ff;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pulse-dot {
+            width: 7px; height: 7px;
+            background: #00d2ff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00d2ff;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; }
+        }
+
+        .main-layout {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .summary-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+        }
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            border-radius: 12px;
+            padding: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), transparent);
+        }
+        .metric-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .metric-value {
+            font-size: 1.65rem;
+            font-weight: 800;
+        }
+        .metric-sub {
+            margin-top: 6px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* BIỂU ĐỒ HÌNH TRÒN KÍN */
+        .pie-chart-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            border-radius: 14px;
+            padding: 20px;
+        }
+        .pie-chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #142033;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .pie-chart-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pie-chart-body {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 24px;
+            min-height: 220px;
+        }
+        .pie-canvas-wrap {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            flex-shrink: 0;
+        }
+        .pie-legend-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            min-width: 240px;
+            max-width: 450px;
+        }
+        .pie-legend-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #080d17;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #162236;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .pie-legend-row:hover {
+            transform: translateX(4px);
+            border-color: rgba(0, 210, 255, 0.4);
+        }
+        .pie-legend-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .pie-legend-avatar {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            image-rendering: pixelated;
+        }
+        .pie-legend-color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* Biểu đồ Line Tốc Độ */
+        .chart-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            border-radius: 14px;
+            padding: 18px;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .chart-header h3 { font-size: 1rem; font-weight: 700; color: #fff; }
+        .timeframe-controls {
+            display: flex;
+            background: #060a12;
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid var(--border-line);
+            gap: 2px;
+        }
+        .tf-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            transition: all 0.2s ease;
+        }
+        .tf-btn.active {
+            background: var(--accent-cyan-bg);
+            color: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan);
+        }
+        .chart-container { position: relative; height: 260px; width: 100%; }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .account-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            border-radius: 12px;
+            padding: 18px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .account-card.card-offline {
+            border-color: rgba(239, 68, 68, 0.6) !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+        }
+        .status-badge-offline {
+            font-size: 0.75rem;
+            color: #ef4444 !important;
+            background: rgba(239, 68, 68, 0.15) !important;
+            border: 1px solid #ef4444;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-line);
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+        .player-info-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .player-avatar {
+            width: 34px; height: 34px;
+            border-radius: 7px;
+            border: 1px solid var(--accent-cyan);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+            background: #060a12;
+            image-rendering: pixelated;
+        }
+        .account-card.card-offline .player-avatar {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+        }
+        .player-info {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #f8fafc;
+        }
+        .card-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-delete-card {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 2px 6px;
+        }
+        .btn-delete-card:hover { color: var(--accent-red); }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.88rem;
+        }
+        .stat-label { color: #94a3b8; }
+        .stat-num { font-weight: 600; }
+
+        /* TAB 2: CASHOUT & VND */
+        .cashout-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+        }
+        .rate-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        .rate-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #060a12;
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid #1e293b;
+        }
+        .rate-input {
+            width: 120px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--accent-cyan);
+            font-size: 1.4rem;
+            font-weight: 800;
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .cashout-display {
+            background: linear-gradient(145deg, #0e1524, #080d17);
+            border: 1px solid var(--border-line);
+            border-radius: 18px;
+            padding: 38px 24px;
+            text-align: center;
+            position: relative;
+        }
+        .cashout-display::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, transparent, #fda085, transparent);
+        }
+        .cashout-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .cashout-amount {
+            font-size: 3.2rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 14px;
+            background: linear-gradient(135deg, #ffe259 0%, #ffa751 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 14px rgba(255, 167, 81, 0.4));
+        }
+        .cashout-formula {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(14, 21, 36, 0.8);
+            border: 1px solid var(--border-line);
+            padding: 7px 16px;
+            border-radius: 999px;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        .payments-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            border-radius: 14px;
+            padding: 18px;
+        }
+        .payments-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .payments-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        /* Icon SVG Ví tiền Cyberpunk trong bảng Auto Pay */
+        .wallet-svg-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            vertical-align: middle;
+            filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.4));
+        }
+
+        .payments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .payment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #060a12;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #142033;
+            font-size: 0.88rem;
+        }
+        .pay-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .pay-avatar {
+            width: 26px; height: 26px;
+            border-radius: 5px;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Khóa PIN -->
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>BẢO MẬT HỆ THỐNG</h2>
+            <p>Nhập mã PIN cá nhân để mở Dashboard</p>
+            <input type="password" id="pass-input" pattern="[0-9]*" inputmode="numeric" placeholder="****" onkeydown="if(event.key==='Enter') checkPass()">
+            <button onclick="checkPass()">Mở Khóa</button>
+        </div>
+    </div>
+
+    <!-- HỘP THOẠI XÁC NHẬN CUSTOM MODAL -->
+    <div id="custom-confirm-modal">
+        <div class="modal-card">
+            <div class="modal-icon-wrap" id="modal-icon-wrap">
+                <span id="modal-icon">🔄</span>
+            </div>
+            <div class="modal-title" id="modal-title">Xác Nhận Hành Động</div>
+            <div class="modal-desc" id="modal-desc">Bạn có chắc chắn muốn thực hiện hành động này không?</div>
+            <div class="modal-btn-group">
+                <button class="modal-btn btn-cancel" onclick="closeCustomModal()">Hủy Bỏ</button>
+                <button class="modal-btn btn-confirm" id="modal-confirm-btn">Xác Nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-notice">
+        <span id="toast-icon">✅</span>
+        <span id="toast-text">Thực hiện thành công!</span>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div>
+            <div class="brand-header">
+                <div class="brand-logo-frame">
+                    <img src="https://github.com/DonutNetwork.png" class="brand-logo-img" alt="DonutNetwork Logo">
+                </div>
+                <div class="brand-title">Donut SMP</div>
+            </div>
+
+            <div class="nav-group-title">TỔNG QUAN</div>
+            <div class="nav-list">
+                <!-- NÚT 1: THỐNG KÊ DONUT SMP -->
+                <button class="nav-btn active" id="btn-tab-terminal" onclick="switchTab('terminal')">
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#00d2ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="6" y1="12" x2="10" y2="12"></line>
+                            <line x1="8" y1="10" x2="8" y2="14"></line>
+                            <line x1="15" y1="13" x2="15.01" y2="13"></line>
+                            <line x1="18" y1="11" x2="18.01" y2="11"></line>
+                            <rect x="2" y="6" width="20" height="12" rx="6"></rect>
+                        </svg>
+                    </span>
+                    <span class="nav-text">Thống kê Donut SMP</span>
+                </button>
+
+                <!-- NÚT 2: RÚT TIỀN & QUY ĐỔI -->
+                <button class="nav-btn" id="btn-tab-cashout" onclick="switchTab('cashout')">
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 12 20 22 4 22 4 12"></polyline>
+                            <rect x="2" y="7" width="20" height="5"></rect>
+                            <line x1="12" y1="22" x2="12" y2="7"></line>
+                            <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+                            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+                        </svg>
+                    </span>
+                    <span class="nav-text">Rút Tiền & Quy Đổi</span>
+                </button>
+            </div>
+
+            <div class="nav-group-title">HỆ THỐNG</div>
+            <div class="nav-list">
+                <button class="nav-btn" onclick="openResetChartModal()">
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </span>
+                    <span class="nav-text">Reset Biểu Đồ</span>
+                </button>
+
+                <button class="nav-btn" onclick="openResetAllModal()">
+                    <span class="icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </span>
+                    <span class="nav-text">Reset Dữ Liệu</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTENT AREA -->
+    <main class="content-area">
+        <header>
+            <div class="header-title-wrap">
+                <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="view-heading heading-terminal" id="current-view-title">Thống Kê Donut SMP</div>
+            </div>
+
+            <div class="header-actions">
+                <div class="live-badge">
+                    <div class="pulse-dot"></div> FEED REALTIME
+                </div>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            
+            <!-- TAB 1: TERMINAL DONUT SMP -->
+            <div id="tab-terminal" class="tab-content active-tab">
+                <div class="summary-grid-3">
+                    <div class="metric-card">
+                        <div class="metric-title">Tổng Doanh Thu</div>
+                        <div class="metric-value neon-font neon-cyan-glow" id="total-revenue">0.00m</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Tốc Độ Trung Bình</div>
+                        <div class="metric-value neon-font neon-green-glow" id="total-rate">+0.00m/h</div>
+                        <div class="metric-sub">
+                            <span>Dự kiến:</span>
+                            <span id="est-24h" class="neon-font" style="color: #38bdf8; font-weight: 700;">~0.00b/24h</span>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Số Account Đang Hoạt Động</div>
+                        <div class="metric-value neon-font" id="active-accs" style="color: #ffffff;">0</div>
+                    </div>
+                </div>
+
+                <!-- BẢNG BIỂU ĐỒ VÒNG TRÒN KÍN (SOLID PIE CHART) -->
+                <div class="pie-chart-section" id="pie-section">
+                    <div class="pie-chart-header">
+                        <h3>🥧 Tỷ Trọng Doanh Thu Giữa Các Account</h3>
+                        <span id="share-summary-rate" style="font-size: 0.8rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">100% Đang Hoạt Động</span>
+                    </div>
+                    <div class="pie-chart-body">
+                        <div class="pie-canvas-wrap">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                        <div class="pie-legend-container" id="pie-legend-box"></div>
+                    </div>
+                </div>
+
+                <!-- Biểu đồ Line Tốc Độ -->
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3>Biến Động Tốc Độ Trung Bình (m/h)</h3>
+                        <div class="timeframe-controls">
+                            <button class="tf-btn active" onclick="setTimeframe('live', 30, this)">LIVE (30p)</button>
+                            <button class="tf-btn" onclick="setTimeframe('1h', 60, this)">1H</button>
+                            <button class="tf-btn" onclick="setTimeframe('6h', 180, this)">6H</button>
+                            <button class="tf-btn" onclick="setTimeframe('24h', 360, this)">24H</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="marketChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Cards Grid -->
+                <div class="cards-grid" id="accounts-container">
+                    <p style="color: var(--text-muted);">Đang kết nối Realtime tới Firebase...</p>
+                </div>
+            </div>
+
+            <!-- TAB 2: CASHOUT & VND -->
+            <div id="tab-cashout" class="tab-content">
+                <div class="cashout-stats-grid">
+                    <div class="metric-card">
+                        <div class="metric-title">Tổng Đã Rút Về Ví (Auto Pay)</div>
+                        <div class="metric-value neon-font neon-yellow-glow" id="total-withdrawn">0.00m</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Tương Đương Đơn Vị Tỷ (B)</div>
+                        <div class="metric-value neon-font" style="color: #38bdf8;" id="withdrawn-b">0.000B</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Giá 1 Tỷ (1B) Theo Rate Này</div>
+                        <div class="metric-value neon-font" style="color: #f1f5f9;" id="rate-per-b">0 đ</div>
+                    </div>
+                </div>
+
+                <div class="rate-card">
+                    <div>
+                        <h3 style="color: #fff; font-size: 1.05rem; margin-bottom: 4px;">Tỷ Giá Thu Mua (Rate / 1M)</h3>
+                        <p style="color: var(--text-muted); font-size: 0.82rem;">Nhập số VNĐ tương ứng với 1 Triệu (1M) DonutSMP</p>
+                    </div>
+                    <div class="rate-input-wrap">
+                        <input type="text" id="rate-input" class="rate-input" value="00.00" oninput="onRateInput(this)">
+                        <span style="color: var(--text-muted); font-size: 0.88rem; font-weight: 600;">VNĐ / 1M</span>
+                    </div>
+                </div>
+
+                <div class="cashout-display">
+                    <div class="cashout-label">Tổng Tiền Đã Rút Về Ví Quy Ra VNĐ</div>
+                    <div class="cashout-amount neon-font" id="vnd-total">0 đ</div>
+                    <div class="cashout-formula">
+                        <span id="formula-m" class="neon-font">0.00M</span>
+                        <span>×</span>
+                        <span id="formula-rate" class="neon-font" style="color: #ffa751;">0 đ</span>
+                        <span>=</span>
+                        <span style="color: #ffe259; font-weight: 700;">Thành tiền VND</span>
+                    </div>
+                </div>
+
+                <div class="payments-section">
+                    <div class="payments-header">
+                        <h3>
+                            <!-- Icon Vector Ví Tiền Cyberpunk -->
+                            <svg class="wallet-svg-icon" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path>
+                                <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path>
+                                <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path>
+                            </svg>
+                            <span>Lịch Sử Auto Pay</span>
+                        </h3>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Realtime Feed</span>
+                    </div>
+                    <div class="payments-list" id="payments-list">
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Chưa có giao dịch chuyển tiền nào được ghi nhận.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const MY_SECRET_PIN = "8888";
+
+        function checkPass() {
+            const inputVal = document.getElementById('pass-input').value.trim();
+            if (inputVal === MY_SECRET_PIN) {
+                localStorage.setItem('dsmp_auth_passed', 'true');
+                document.getElementById('login-overlay').style.display = 'none';
+            } else {
+                showToast("Mã PIN không chính xác!", "❌");
+                document.getElementById('pass-input').value = '';
+            }
+        }
+
+        if (localStorage.getItem('dsmp_auth_passed') === 'true') {
+            document.getElementById('login-overlay').style.display = 'none';
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('mobile-open');
+        }
+
+        // ==========================================
+        // CƠ CHẾ MODAL VÀ TOAST THÔNG BÁO
+        // ==========================================
+        let pendingConfirmCallback = null;
+
+        function showCustomModal(title, desc, icon, isDanger, onConfirm) {
+            const modal = document.getElementById('custom-confirm-modal');
+            const iconWrap = document.getElementById('modal-icon-wrap');
+            const iconEl = document.getElementById('modal-icon');
+            const titleEl = document.getElementById('modal-title');
+            const descEl = document.getElementById('modal-desc');
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+
+            titleEl.textContent = title;
+            descEl.textContent = desc;
+            iconEl.textContent = icon;
+
+            if (isDanger) {
+                iconWrap.className = 'modal-icon-wrap danger';
+                confirmBtn.className = 'modal-btn btn-confirm danger';
+            } else {
+                iconWrap.className = 'modal-icon-wrap';
+                confirmBtn.className = 'modal-btn btn-confirm';
+            }
+
+            pendingConfirmCallback = onConfirm;
+            confirmBtn.onclick = function() {
+                if (pendingConfirmCallback) pendingConfirmCallback();
+                closeCustomModal();
+            };
+
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeCustomModal() {
+            const modal = document.getElementById('custom-confirm-modal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 250);
+            pendingConfirmCallback = null;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeCustomModal();
+        });
+
+        function showToast(text, icon = "✅") {
+            const toast = document.getElementById('toast-notice');
+            document.getElementById('toast-icon').textContent = icon;
+            document.getElementById('toast-text').textContent = text;
+
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        function openResetChartModal() {
+            showCustomModal(
+                "Reset Lịch Sử Biểu Đồ",
+                "Bạn có chắc chắn muốn xóa toàn bộ lịch sử biến động tốc độ trên Firebase Cloud không?",
+                "🔄",
+                false,
+                function() {
+                    database.ref('history_logs').remove().then(() => {
+                        cloudChartHistory = { labels: [], data: [] };
+                        if (chartInstance) {
+                            chartInstance.data.labels = [];
+                            chartInstance.data.datasets[0].data = [];
+                            chartInstance.update();
+                        }
+                        showToast("Đã reset biểu đồ thành công!", "🔄");
+                    });
+                }
+            );
+        }
+
+        function openResetAllModal() {
+            showCustomModal(
+                "Reset Toàn Bộ Dữ Liệu",
+                "Hành động này sẽ XÓA SẠCH Live Status, Lịch sử tốc độ và Lịch sử chuyển tiền trên Firebase. Bạn có chắc không?",
+                "⚠",
+                true,
+                function() {
+                    database.ref('live_status').remove();
+                    database.ref('history_logs').remove();
+                    database.ref('payments_history').remove().then(() => {
+                        showToast("Đã dọn dẹp sạch toàn bộ dữ liệu!", "🗑️");
+                    });
+                }
+            );
+        }
+
+        function deleteSingleAccount(accKey) {
+            showCustomModal(
+                "Xóa Account",
+                `Bạn có chắc chắn muốn xóa account [${accKey}] khỏi dashboard?`,
+                "🗑",
+                true,
+                function() {
+                    database.ref(`live_status/${accKey}`).remove().then(() => {
+                        showToast(`Đã xóa [${accKey}] thành công!`, "🗑️");
+                    });
+                }
+            );
+        }
+
+        // ==========================================
+        // QUẢN LÝ RATE & LOCALSTORAGE TỰ ĐỘNG
+        // ==========================================
+        // Nếu đã từng nhập, lấy giá trị đó ra. Nếu chưa từng nhập, mặc định là "00.00"
+        let savedRateStr = localStorage.getItem('dsmp_vnd_rate_str');
+        if (savedRateStr === null || savedRateStr === "") {
+            savedRateStr = "00.00";
+        }
+        document.getElementById('rate-input').value = savedRateStr;
+
+        function getNumericRate() {
+            const rawVal = document.getElementById('rate-input').value.replace(/,/g, '.').trim();
+            const num = parseFloat(rawVal);
+            return isNaN(num) ? 0 : num;
+        }
+
+        function onRateInput(inputEl) {
+            const val = inputEl.value;
+            // Lưu nguyên văn bản bạn vừa nhập vào bộ nhớ duyệt web
+            localStorage.setItem('dsmp_vnd_rate_str', val);
+            calculateVND(false);
+        }
+
+        function switchTab(tabName) {
+            const tabTerminal = document.getElementById('tab-terminal');
+            const tabCashout = document.getElementById('tab-cashout');
+            const btnTerminal = document.getElementById('btn-tab-terminal');
+            const btnCashout = document.getElementById('btn-tab-cashout');
+            const titleEl = document.getElementById('current-view-title');
+
+            if (tabName === 'cashout') {
+                tabTerminal.classList.remove('active-tab');
+                btnTerminal.classList.remove('active');
+                
+                tabCashout.classList.add('active-tab');
+                btnCashout.classList.add('active');
+                
+                titleEl.textContent = 'Rút Tiền & Quy Đổi VNĐ';
+                titleEl.className = 'view-heading heading-cashout';
+
+                // Lấy lại giá trị đã lưu lần trước hiển thị vào input
+                const currentSaved = localStorage.getItem('dsmp_vnd_rate_str') || "00.00";
+                document.getElementById('rate-input').value = currentSaved;
+
+                odometerCurrentVals['total-withdrawn'] = 0;
+                odometerCurrentVals['vnd-total'] = 0;
+                odometerCurrentVals['withdrawn-b'] = 0;
+                
+                calculateVND(true);
+            } else {
+                tabCashout.classList.remove('active-tab');
+                btnCashout.classList.remove('active');
+
+                tabTerminal.classList.add('active-tab');
+                btnTerminal.classList.add('active');
+
+                titleEl.textContent = 'Thống Kê Donut SMP';
+                titleEl.className = 'view-heading heading-terminal';
+
+                odometerCurrentVals['total-revenue'] = 0;
+                odometerCurrentVals['total-rate'] = 0;
+                odometerCurrentVals['est-24h'] = 0;
+                odometerCurrentVals['active-accs'] = 0;
+
+                for (const key in accountStates) {
+                    const safeKey = key.replace(/[^a-zA-Z0-9]/g, '_');
+                    odometerCurrentVals[`money-${safeKey}`] = 0;
+                    odometerCurrentVals[`speed-${safeKey}`] = 0;
+                }
+
+                refreshTerminalNumbers();
+
+                setTimeout(() => {
+                    if (chartInstance) {
+                        chartInstance.resize();
+                        chartInstance.reset();
+                        chartInstance.update();
+                    }
+                    if (pieChartInstance) {
+                        pieChartInstance.resize();
+                        pieChartInstance.reset();
+                        pieChartInstance.update();
+                    }
+                }, 80);
+            }
+
+            document.getElementById('sidebar').classList.remove('mobile-open');
+        }
+
+        const firebaseConfig = {
+            databaseURL: "https://test-97278-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const accountTimers = {};
+        const accountStates = {};
+        let chartInstance = null;
+        let pieChartInstance = null;
+        let maxDataPoints = 30;
+        let cloudChartHistory = { labels: [], data: [] };
+        let globalWithdrawnM = 0;
+
+        const ACC_COLORS = ['#00d2ff', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#3b82f6'];
+
+        const odometerCurrentVals = {};
+        function animateNumber(elementId, targetValue, decimals = 2, prefix = "", suffix = "", duration = 750, forceFromZero = false) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+
+            let startVal = odometerCurrentVals[elementId] !== undefined ? odometerCurrentVals[elementId] : 0;
+            if (forceFromZero) startVal = 0;
+
+            odometerCurrentVals[elementId] = targetValue;
+
+            const startTime = performance.now();
+            function update(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                const current = startVal + (targetValue - startVal) * ease;
+
+                el.textContent = `${prefix}${current.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals})}${suffix}`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    el.textContent = `${prefix}${targetValue.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals})}${suffix}`;
+                }
+            }
+            requestAnimationFrame(update);
+        }
+
+        function calculateVND(fromZero = false) {
+            const rate = getNumericRate();
+            const totalVND = globalWithdrawnM * rate;
+            
+            animateNumber('total-withdrawn', globalWithdrawnM, 2, '', 'm', 750, fromZero);
+            animateNumber('vnd-total', totalVND, 0, '', ' đ', 850, fromZero);
+
+            document.getElementById('formula-m').textContent = globalWithdrawnM.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'M';
+            document.getElementById('formula-rate').textContent = rate.toLocaleString('vi-VN') + ' đ';
+
+            document.getElementById('withdrawn-b').textContent = (globalWithdrawnM / 1000).toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) + 'B';
+            document.getElementById('rate-per-b').textContent = (rate * 1000).toLocaleString('vi-VN') + ' đ';
+        }
+
+        function setTimeframe(tfName, limitPoints, btn) {
+            document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            maxDataPoints = limitPoints;
+
+            if (chartInstance && cloudChartHistory.labels.length > 0) {
+                chartInstance.data.labels = cloudChartHistory.labels.slice(-maxDataPoints);
+                chartInstance.data.datasets[0].data = cloudChartHistory.data.slice(-maxDataPoints);
+                chartInstance.update();
+            }
+        }
+
+        function initPieChart() {
+            const canvas = document.getElementById('pieChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            pieChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: ACC_COLORS,
+                        borderColor: '#0e1524',
+                        borderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 1100,
+                        easing: 'easeOutQuart'
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const pcts = ctx.dataset.percentages || [];
+                                    const p = pcts[ctx.dataIndex] !== undefined ? pcts[ctx.dataIndex] : 0;
+                                    return ` ${ctx.label}: ${Number(ctx.raw).toFixed(2)}m (${p}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initLineChart() {
+            const canvas = document.getElementById('marketChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+            gradient.addColorStop(0, 'rgba(0, 210, 255, 0.35)');
+            gradient.addColorStop(1, 'rgba(0, 210, 255, 0.0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Tốc Độ Trung Bình (m/h)',
+                        data: [],
+                        borderColor: '#00d2ff',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#00d2ff',
+                        pointBorderColor: '#060a12',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 1200,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: {
+                        x: { 
+                            grid: { color: '#131e33' }, 
+                            ticks: { 
+                                color: '#64748b',
+                                font: { family: "'JetBrains Mono', monospace", size: 10 }
+                            } 
+                        },
+                        y: { 
+                            grid: { color: '#131e33' }, 
+                            ticks: { 
+                                color: '#64748b',
+                                font: { family: "'JetBrains Mono', monospace", size: 10 },
+                                callback: (val) => Number(val).toLocaleString() + 'm/h'
+                            } 
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ' Tốc độ: +' + Number(ctx.raw).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'm/h'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updatePieChartUI() {
+            const pieSection = document.getElementById('pie-section');
+            const legendBox = document.getElementById('pie-legend-box');
+            const summaryBadge = document.getElementById('share-summary-rate');
+
+            const keys = Object.keys(accountStates);
+            const totalAccs = keys.length;
+
+            if (totalAccs === 0) {
+                if (pieSection) pieSection.style.display = 'none';
+                return;
+            }
+            if (pieSection) pieSection.style.display = 'block';
+
+            let activeAccCount = 0;
+            let grandTotal = 0;
+
+            keys.forEach(k => {
+                const acc = accountStates[k];
+                if (!acc.isOffline) activeAccCount++;
+                grandTotal += (acc.currentIncome || 0);
+            });
+
+            if (summaryBadge) {
+                const activePercentage = Math.round((activeAccCount / totalAccs) * 100);
+                summaryBadge.textContent = `${activePercentage}% Đang Hoạt Động (${activeAccCount}/${totalAccs})`;
+
+                if (activePercentage === 100) {
+                    summaryBadge.style.color = '#00d2ff';
+                    summaryBadge.style.background = 'rgba(0, 210, 255, 0.12)';
+                    summaryBadge.style.border = '1px solid #00d2ff';
+                } else if (activePercentage > 0) {
+                    summaryBadge.style.color = '#fbbf24';
+                    summaryBadge.style.background = 'rgba(251, 191, 36, 0.12)';
+                    summaryBadge.style.border = '1px solid #fbbf24';
+                } else {
+                    summaryBadge.style.color = '#ef4444';
+                    summaryBadge.style.background = 'rgba(239, 68, 68, 0.12)';
+                    summaryBadge.style.border = '1px solid #ef4444';
+                }
+            }
+
+            const labels = [];
+            const dataVals = [];
+            const pcts = [];
+            if (legendBox) legendBox.innerHTML = '';
+
+            keys.forEach((key, index) => {
+                const acc = accountStates[key];
+                const pct = grandTotal > 0 ? ((acc.currentIncome / grandTotal) * 100).toFixed(1) : (100 / totalAccs).toFixed(1);
+                const color = ACC_COLORS[index % ACC_COLORS.length];
+
+                labels.push(acc.name);
+                dataVals.push(acc.currentIncome > 0 ? acc.currentIncome : 0.01);
+                pcts.push(pct);
+
+                if (legendBox) {
+                    const avatar = `https://mc-heads.net/avatar/${encodeURIComponent(acc.name)}/22`;
+                    const row = document.createElement('div');
+                    row.className = 'pie-legend-row';
+                    row.innerHTML = `
+                        <div class="pie-legend-left">
+                            <div class="pie-legend-color-dot" style="background: ${color}; box-shadow: 0 0 8px ${color}"></div>
+                            <img class="pie-legend-avatar" src="${avatar}" onerror="this.src='https://mc-heads.net/avatar/steve/22'">
+                            <span style="font-weight: 700; color: #f1f5f9; font-size: 0.88rem;">${acc.name}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="neon-font" style="color: ${color}; font-weight: 800; font-size: 0.92rem;">${pct}%</span>
+                            <span style="color: var(--text-muted); font-size: 0.78rem; margin-left: 6px;">(${acc.currentIncome.toFixed(2)}m)</span>
+                        </div>
+                    `;
+                    legendBox.appendChild(row);
+                }
+            });
+
+            if (pieChartInstance) {
+                pieChartInstance.data.labels = labels;
+                pieChartInstance.data.datasets[0].data = dataVals;
+                pieChartInstance.data.datasets[0].percentages = pcts;
+                pieChartInstance.data.datasets[0].backgroundColor = keys.map((_, i) => ACC_COLORS[i % ACC_COLORS.length]);
+                pieChartInstance.update();
+            }
+        }
+
+        function refreshTerminalNumbers() {
+            let grandTotalRevenue = 0;
+            let grandTotalRatePerHour = 0;
+            let activeAccountsCount = 0;
+
+            for (const key in accountStates) {
+                const acc = accountStates[key];
+                grandTotalRevenue += (acc.currentIncome || 0);
+                grandTotalRatePerHour += (acc.speedNum || 0);
+                if (!acc.isOffline) activeAccountsCount++;
+
+                const safeKey = key.replace(/[^a-zA-Z0-9]/g, '_');
+                animateNumber(`money-${safeKey}`, acc.currentIncome, 2, '', 'm', 750, true);
+                animateNumber(`speed-${safeKey}`, acc.speedNum, 2, '+', 'm/h', 750, true);
+            }
+
+            const est24hInB = (grandTotalRatePerHour * 24) / 1000;
+            animateNumber('total-revenue', grandTotalRevenue, 2, '', 'm', 800, true);
+            animateNumber('total-rate', grandTotalRatePerHour, 2, '+', 'm/h', 800, true);
+            animateNumber('est-24h', est24hInB, 2, '~', 'b/24h', 800, true);
+            animateNumber('active-accs', activeAccountsCount, 0, '', '', 600, true);
+        }
+
+        database.ref('history_logs').limitToLast(360).on('value', (snapshot) => {
+            const logs = snapshot.val();
+            if (!logs) {
+                cloudChartHistory = { labels: [], data: [] };
+                if (chartInstance) {
+                    chartInstance.data.labels = [];
+                    chartInstance.data.datasets[0].data = [];
+                    chartInstance.update();
+                }
+                return;
+            }
+
+            const labels = [];
+            const dataPoints = [];
+            for (const key in logs) {
+                const item = logs[key];
+                const d = new Date(item.timestamp || Date.now());
+                const timeLabel = d.getHours().toString().padStart(2, '0') + ':' + 
+                                  d.getMinutes().toString().padStart(2, '0') + ':' + 
+                                  d.getSeconds().toString().padStart(2, '0');
+                labels.push(timeLabel);
+                dataPoints.push(item.speed || 0);
+            }
+
+            cloudChartHistory = { labels, data: dataPoints };
+
+            if (chartInstance) {
+                chartInstance.data.labels = cloudChartHistory.labels.slice(-maxDataPoints);
+                chartInstance.data.datasets[0].data = cloudChartHistory.data.slice(-maxDataPoints);
+                chartInstance.update();
+            }
+        });
+
+        database.ref('payments_history').limitToLast(20).on('value', (snapshot) => {
+            const pays = snapshot.val();
+            const listEl = document.getElementById('payments-list');
+            let totalWithdrawnNum = 0;
+
+            if (!pays) {
+                listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Chưa có giao dịch chuyển tiền nào được ghi nhận.</p>';
+                animateNumber('total-withdrawn', 0, 2, '', 'm');
+                globalWithdrawnM = 0;
+                calculateVND();
+                return;
+            }
+
+            listEl.innerHTML = '';
+            const payKeys = Object.keys(pays).reverse();
+
+            payKeys.forEach(k => {
+                const p = pays[k];
+                totalWithdrawnNum += Number(p.amount_m) || 0;
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'payment-item';
+                const avatar = `https://mc-heads.net/avatar/${encodeURIComponent(p.sender)}/26`;
+
+                itemDiv.innerHTML = `
+                    <div class="pay-left">
+                        <img class="pay-avatar" src="${avatar}" onerror="this.src='https://mc-heads.net/avatar/steve/26'">
+                        <div>
+                            <span style="font-weight: 700; color: #f8fafc;">${p.sender}</span>
+                            <span style="color: var(--text-muted); font-size: 0.78rem;"> ➔ ${p.receiver}</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="neon-font neon-cyan-glow" style="font-weight: 700;">+${p.amount_text || (p.amount_m + 'M')}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${p.time_str || ''}</div>
+                    </div>
+                `;
+                listEl.appendChild(itemDiv);
+            });
+
+            globalWithdrawnM = totalWithdrawnNum;
+            calculateVND(false);
+        });
+
+        function parseTimeToSeconds(timeStr) {
+            if (!timeStr) return 0;
+            const parts = timeStr.toString().trim().split(':').map(Number);
+            if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            if (parts.length === 2) return parts[0] * 60 + parts[1];
+            return 0;
+        }
+
+        function formatSecondsToTime(totalSeconds) {
+            const hrs = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+            const secs = String(totalSeconds % 60).padStart(2, '0');
+            return `${hrs}:${mins}:${secs}`;
+        }
+
+        function updateGrandTotalLive() {
+            let liveTotal = 0;
+            for (const key in accountStates) {
+                liveTotal += accountStates[key].currentIncome;
+            }
+            const totalEl = document.getElementById('total-revenue');
+            if (totalEl) {
+                totalEl.textContent = liveTotal.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }) + 'm';
+                odometerCurrentVals['total-revenue'] = liveTotal;
+            }
+            updatePieChartUI();
+        }
+
+        database.ref('live_status').on('value', (snapshot) => {
+            const data = snapshot.val();
+            const container = document.getElementById('accounts-container');
+
+            for (const key in accountTimers) {
+                clearInterval(accountTimers[key]);
+                delete accountTimers[key];
+            }
+            for (const key in accountStates) {
+                delete accountStates[key];
+            }
+
+            if (!data) {
+                container.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center;">Chưa có dữ liệu nào.</p>';
+                animateNumber('total-revenue', 0, 2, '', 'm');
+                animateNumber('total-rate', 0, 2, '+', 'm/h');
+                animateNumber('est-24h', 0, 2, '~', 'b/24h');
+                animateNumber('active-accs', 0, 0);
+                document.getElementById('pie-section').style.display = 'none';
+                return;
+            }
+
+            container.innerHTML = '';
+            let grandTotalRevenue = 0;
+            let grandTotalRatePerHour = 0;
+            let activeAccountsCount = 0;
+
+            for (const accKey in data) {
+                const item = data[accKey];
+                const name = item.player || accKey;
+                const server = item.server || "donutsmp.net";
+                const timeRaw = item.time_online || "00:00:00";
+                const incomeNum = Number(item.income) || 0;
+                const speedNum = Number(item.speed) || 0;
+                const updatedAt = Number(item.updated_at) || Date.now();
+
+                const secondsTrained = parseTimeToSeconds(timeRaw);
+                let moneyPerHour = speedNum;
+                if (!moneyPerHour && secondsTrained > 0) {
+                    moneyPerHour = Math.round((incomeNum / secondsTrained) * 3600 * 100) / 100;
+                }
+
+                grandTotalRevenue += incomeNum;
+                grandTotalRatePerHour += moneyPerHour;
+
+                const safeKey = accKey.replace(/[^a-zA-Z0-9]/g, '_');
+                const cardId = `card-${safeKey}`;
+                const timerId = `timer-${safeKey}`;
+                const moneyId = `money-${safeKey}`;
+                const speedId = `speed-${safeKey}`;
+                const badgeId = `badge-${safeKey}`;
+
+                const avatarUrl = `https://mc-heads.net/avatar/${encodeURIComponent(name)}/34`;
+                const isCurrentlyOffline = (Date.now() - updatedAt) > 180000;
+
+                const card = document.createElement('div');
+                card.className = 'account-card' + (isCurrentlyOffline ? ' card-offline' : '');
+                card.id = cardId;
+
+                card.innerHTML = `
+                    <div class="card-top">
+                        <div class="player-info-wrap">
+                            <img class="player-avatar" src="${avatarUrl}" alt="${name}" onerror="this.src='https://mc-heads.net/avatar/steve/34'">
+                            <span class="player-info">${name}</span>
+                        </div>
+                        <div class="card-controls">
+                            <span id="${badgeId}" class="${isCurrentlyOffline ? 'status-badge-offline' : ''}" style="${isCurrentlyOffline ? '' : 'font-size: 0.75rem; color: var(--accent-cyan); background: var(--accent-cyan-bg); border: 1px solid var(--accent-cyan); padding: 2px 6px; border-radius: 4px; font-weight: 700;'}">${isCurrentlyOffline ? 'OFFLINE' : 'Active'}</span>
+                            <button class="btn-delete-card" title="Xóa thẻ" onclick="deleteSingleAccount('${accKey}')">✕</button>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Server</span>
+                        <span class="stat-num">${server}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Thời Gian Treo</span>
+                        <span class="stat-num neon-font" style="color: #f8fafc;" id="${timerId}">${timeRaw}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Doanh Thu Treo</span>
+                        <span class="stat-num neon-font neon-cyan-glow" id="${moneyId}">0.00m</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Profit / Giờ</span>
+                        <span class="stat-num neon-font neon-green-glow" id="${speedId}">+0.00m/h</span>
+                    </div>
+                `;
+                container.appendChild(card);
+
+                animateNumber(moneyId, incomeNum, 2, '', 'm');
+                animateNumber(speedId, moneyPerHour, 2, '+', 'm/h');
+
+                if (!isCurrentlyOffline) activeAccountsCount++;
+
+                const gainPerSec = moneyPerHour / 3600;
+                accountStates[accKey] = {
+                    name: name,
+                    currentIncome: incomeNum,
+                    speedNum: moneyPerHour,
+                    gainPerSec: gainPerSec,
+                    currentSeconds: secondsTrained,
+                    timerId: timerId,
+                    moneyId: moneyId,
+                    lastSyncTimestamp: updatedAt,
+                    isOffline: isCurrentlyOffline
+                };
+
+                accountTimers[accKey] = setInterval(() => {
+                    const acc = accountStates[accKey];
+                    if (!acc) return;
+
+                    const secondsSinceLastSync = (Date.now() - acc.lastSyncTimestamp) / 1000;
+                    const cardEl = document.getElementById(cardId);
+                    const badgeEl = document.getElementById(badgeId);
+
+                    if (secondsSinceLastSync > 180) {
+                        if (!acc.isOffline) {
+                            acc.isOffline = true;
+                            if (cardEl) cardEl.classList.add('card-offline');
+                            if (badgeEl) {
+                                badgeEl.className = 'status-badge-offline';
+                                badgeEl.textContent = 'OFFLINE';
+                            }
+                            updatePieChartUI();
+                        }
+                    } else {
+                        if (acc.isOffline) {
+                            acc.isOffline = false;
+                            if (cardEl) cardEl.classList.remove('card-offline');
+                            if (badgeEl) {
+                                badgeEl.className = '';
+                                badgeEl.style = 'font-size: 0.75rem; color: var(--accent-cyan); background: var(--accent-cyan-bg); border: 1px solid var(--accent-cyan); padding: 2px 6px; border-radius: 4px; font-weight: 700;';
+                                badgeEl.textContent = 'Active';
+                            }
+                            updatePieChartUI();
+                        }
+                    }
+
+                    if (!acc.isOffline) {
+                        acc.currentSeconds++;
+                        const timerSpan = document.getElementById(acc.timerId);
+                        if (timerSpan) timerSpan.textContent = formatSecondsToTime(acc.currentSeconds);
+
+                        if (acc.gainPerSec > 0) {
+                            acc.currentIncome += acc.gainPerSec;
+                            const moneySpan = document.getElementById(acc.moneyId);
+                            if (moneySpan) {
+                                moneySpan.textContent = acc.currentIncome.toLocaleString(undefined, {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }) + 'm';
+                                odometerCurrentVals[acc.moneyId] = acc.currentIncome;
+                            }
+                            updateGrandTotalLive();
+                        }
+                    }
+                }, 1000);
+            }
+
+            const est24hInB = (grandTotalRatePerHour * 24) / 1000;
+            animateNumber('total-revenue', grandTotalRevenue, 2, '', 'm');
+            animateNumber('total-rate', grandTotalRatePerHour, 2, '+', 'm/h');
+            animateNumber('est-24h', est24hInB, 2, '~', 'b/24h');
+            animateNumber('active-accs', activeAccountsCount, 0);
+
+            updatePieChartUI();
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initLineChart();
+            initPieChart();
+        });
+    </script>
+</body>
+</html>
