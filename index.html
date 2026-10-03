@@ -1322,7 +1322,7 @@
                     database.ref('live_status').remove();
                     database.ref('history_logs').remove();
                     database.ref('payments_history').remove().then(() => {
-                        showToast("Đã dọn dẹp sạch toàn bộ dữ liệu!", "🗑️️");
+                        showToast("Đã dọn dẹp sạch toàn bộ dữ liệu!", "🗑");
                     });
                 }
             );
@@ -1336,7 +1336,7 @@
                 true,
                 function() {
                     database.ref(`live_status/${accKey}`).remove().then(() => {
-                        showToast(`Đã xóa [${accKey}] thành công!`, "🗑️");
+                        showToast(`Đã xóa [${accKey}] thành công!`, "🗑️️");
                     });
                 }
             );
@@ -1361,6 +1361,31 @@
             const val = inputEl.value;
             localStorage.setItem('dsmp_vnd_rate_str', val);
             calculateVND(false);
+        }
+
+        // ==========================================
+        // HÀM BÓC TÁCH LƯỢT BÁN THÔNG MINH
+        // ==========================================
+        function extractSells(item) {
+            // 1. Kiểm tra trường riêng nếu có
+            if (item.sells !== undefined && item.sells !== null && !isNaN(Number(item.sells))) {
+                return Number(item.sells);
+            }
+            if (item.sell_count !== undefined && !isNaN(Number(item.sell_count))) {
+                return Number(item.sell_count);
+            }
+
+            // 2. Tự động bóc tách từ chuỗi raw_data (VD: "Số lượt bán:** 337\n" hoặc "Số lượt bán: 337")
+            if (item.raw_data && typeof item.raw_data === 'string') {
+                const match = item.raw_data.match(/s[ốo]\s*l[ưươợt]+\s*b[áa]n[^\d]*(\d+[\d,\.]*)/i);
+                if (match && match[1]) {
+                    const cleanNum = match[1].replace(/,/g, '').replace(/\./g, '');
+                    const parsed = parseInt(cleanNum, 10);
+                    if (!isNaN(parsed)) return parsed;
+                }
+            }
+
+            return 0;
         }
 
         function switchTab(tabName) {
@@ -1856,7 +1881,9 @@
                 const timeRaw = item.time_online || "00:00:00";
                 const incomeNum = Number(item.income) || 0;
                 const speedNum = Number(item.speed) || 0;
-                const sellsNum = Number(item.sells || item.sell_count || item.total_sells || item.count) || 0;
+                
+                // Trích xuất số lượt bán thông minh qua regex từ raw_data hoặc trường số
+                const sellsNum = extractSells(item);
                 const updatedAt = Number(item.updated_at) || Date.now();
 
                 const secondsTrained = parseTimeToSeconds(timeRaw);
