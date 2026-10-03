@@ -599,6 +599,28 @@
             gap: 6px;
         }
 
+        /* STYLE ICON VECTOR MỚI TRONG NỘI DUNG */
+        .inline-vector-icon {
+            width: 17px;
+            height: 17px;
+            display: inline-block;
+            vertical-align: -3px;
+            flex-shrink: 0;
+        }
+        .box-vector-icon {
+            stroke: #38bdf8;
+            filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.45));
+        }
+        .pie-vector-icon {
+            width: 20px;
+            height: 20px;
+            stroke: #fbbf24;
+            display: inline-block;
+            vertical-align: -4px;
+            filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.45));
+            margin-right: 6px;
+        }
+
         /* BIỂU ĐỒ HÌNH TRÒN KÍN */
         .pie-chart-section {
             background: var(--bg-card);
@@ -1058,12 +1080,20 @@
             <!-- TAB 1: TERMINAL DONUT SMP -->
             <div id="tab-terminal" class="tab-content active-tab">
                 <div class="summary-grid-3">
-                    <!-- Ô TỔNG DOANH THU & THỐNG KÊ TỔNG LƯỢT BÁN Ở DƯỚI -->
+                    <!-- Ô TỔNG DOANH THU & ICON VECTOR HỘP HÀNG LƯỢT BÁN -->
                     <div class="metric-card">
                         <div class="metric-title">Tổng Doanh Thu</div>
                         <div class="metric-value neon-font neon-cyan-glow" id="total-revenue">0.00m</div>
                         <div class="metric-sub">
-                            <span>📦 Lượt Bán:</span>
+                            <span>
+                                <!-- Icon Vector Box Kiện Hàng Neon -->
+                                <svg class="inline-vector-icon box-vector-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                                    <path d="m3.3 7 8.7 5 8.7-5"></path>
+                                    <path d="M12 22V12"></path>
+                                </svg>
+                                Lượt Bán:
+                            </span>
                             <span id="total-sells" class="neon-font" style="color: #38bdf8; font-weight: 700;">0 lượt</span>
                         </div>
                     </div>
@@ -1081,10 +1111,17 @@
                     </div>
                 </div>
 
-                <!-- BẢNG BIỂU ĐỒ VÒNG TRÒN KÍN (SOLID PIE CHART) -->
+                <!-- BẢNG BIỂU ĐỒ VÒNG TRÒN KÍN (VỚI ICON VECTOR PIE CHART NEON) -->
                 <div class="pie-chart-section" id="pie-section">
                     <div class="pie-chart-header">
-                        <h3>🥧 Tỷ Trọng Doanh Thu Giữa Các Account</h3>
+                        <h3>
+                            <!-- Icon Vector Pie Chart Phân Tích Neon -->
+                            <svg class="pie-vector-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                            </svg>
+                            <span>Tỷ Trọng Doanh Thu Giữa Các Account</span>
+                        </h3>
                         <span id="share-summary-rate" style="font-size: 0.8rem; font-weight: 700; padding: 3px 8px; border-radius: 6px;">100% Đang Hoạt Động</span>
                     </div>
                     <div class="pie-chart-body">
@@ -1285,7 +1322,7 @@
                     database.ref('live_status').remove();
                     database.ref('history_logs').remove();
                     database.ref('payments_history').remove().then(() => {
-                        showToast("Đã dọn dẹp sạch toàn bộ dữ liệu!", "🗑️");
+                        showToast("Đã dọn dẹp sạch toàn bộ dữ liệu!", "🗑️️");
                     });
                 }
             );
@@ -1648,7 +1685,6 @@
             }
         }
 
-        // Chạy lại hiệu ứng số cho tab Terminal từ 0
         function refreshTerminalNumbers() {
             let grandTotalRevenue = 0;
             let grandTotalSells = 0;
@@ -1820,8 +1856,6 @@
                 const timeRaw = item.time_online || "00:00:00";
                 const incomeNum = Number(item.income) || 0;
                 const speedNum = Number(item.speed) || 0;
-                
-                // Lấy số lượt bán (hỗ trợ nhiều tên trường khác nhau như sells, sell_count, total_sells)
                 const sellsNum = Number(item.sells || item.sell_count || item.total_sells || item.count) || 0;
                 const updatedAt = Number(item.updated_at) || Date.now();
 
