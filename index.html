@@ -623,6 +623,18 @@
             filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.45));
             margin-right: 6px;
         }
+        
+        /* STYLE CHO ICON CHART MỚI */
+        .line-vector-icon {
+            stroke: #00d2ff;
+            filter: drop-shadow(0 0 5px rgba(0, 210, 255, 0.45));
+            margin-right: 4px;
+        }
+        .candle-vector-icon {
+            stroke: #fbbf24;
+            filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.45));
+            margin-right: 4px;
+        }
 
         /* BIỂU ĐỒ HÌNH TRÒN KÍN */
         .pie-chart-section {
@@ -744,7 +756,7 @@
             font-family: 'Be Vietnam Pro', sans-serif;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 2px;
             transition: all 0.2s ease;
         }
         .type-btn.active {
@@ -1120,7 +1132,7 @@
                 <div class="summary-grid-3">
                     <div class="metric-card">
                         <div class="metric-title">Tổng Doanh Thu</div>
-                        <div class="metric-value neon-font neon-cyan-glow" id="total-revenue">0.00m</div>
+                        <div class="metric-value neon-font neon-cyan-glow" id="total-revenue">$0.00m</div>
                         <div class="metric-sub">
                             <span>
                                 <svg class="inline-vector-icon box-vector-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1135,10 +1147,10 @@
                     </div>
                     <div class="metric-card">
                         <div class="metric-title">Tốc Độ Trung Bình (Tổng Toàn Dàn)</div>
-                        <div class="metric-value neon-font neon-green-glow" id="total-rate">+0.00m/h</div>
+                        <div class="metric-value neon-font neon-green-glow" id="total-rate">+$0.00m/h</div>
                         <div class="metric-sub">
                             <span>Dự kiến:</span>
-                            <span id="est-24h" class="neon-font" style="color: #38bdf8; font-weight: 700;">~0.00b/24h</span>
+                            <span id="est-24h" class="neon-font" style="color: #38bdf8; font-weight: 700;">~$0.00b/24h</span>
                         </div>
                     </div>
                     <div class="metric-card">
@@ -1173,12 +1185,23 @@
                         <h3 id="chart-main-title">Biến Động Tổng Tốc Độ Cả Dàn Bot (m/h)</h3>
                         
                         <div class="chart-controls-wrap">
+                            <!-- Bộ nút chọn loại Biểu đồ đã đổi icon thành Vector -->
                             <div class="chart-type-toggle">
                                 <button class="type-btn active" id="btn-type-line" onclick="setChartType('line')">
-                                    📈 Đường
+                                    <svg class="inline-vector-icon line-vector-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 17 9 11 13 15 21 7"></polyline>
+                                        <polyline points="14 7 21 7 21 14"></polyline>
+                                    </svg>
+                                    Đường
                                 </button>
                                 <button class="type-btn" id="btn-type-candle" onclick="setChartType('candlestick')">
-                                    🕯️ Nến Nhật
+                                    <svg class="inline-vector-icon candle-vector-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="9" y1="21" x2="9" y2="3"></line>
+                                        <line x1="15" y1="21" x2="15" y2="3"></line>
+                                        <rect x="7" y="8" width="4" height="6"></rect>
+                                        <rect x="13" y="10" width="4" height="8"></rect>
+                                    </svg>
+                                    Nến Nhật
                                 </button>
                             </div>
 
@@ -1206,11 +1229,11 @@
                 <div class="cashout-stats-grid">
                     <div class="metric-card">
                         <div class="metric-title">Tổng Đã Rút Về Ví (Auto Pay)</div>
-                        <div class="metric-value neon-font neon-yellow-glow" id="total-withdrawn">0.00m</div>
+                        <div class="metric-value neon-font neon-yellow-glow" id="total-withdrawn">$0.00m</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-title">Tương Đương Đơn Vị Tỷ (B)</div>
-                        <div class="metric-value neon-font" style="color: #38bdf8;" id="withdrawn-b">0.000B</div>
+                        <div class="metric-value neon-font" style="color: #38bdf8;" id="withdrawn-b">$0.000B</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-title">Giá 1 Tỷ (1B) Theo Rate Này</div>
@@ -1233,7 +1256,7 @@
                     <div class="cashout-label">Tổng Tiền Đã Rút Về Ví Quy Ra VNĐ</div>
                     <div class="cashout-amount neon-font" id="vnd-total">0 đ</div>
                     <div class="cashout-formula">
-                        <span id="formula-m" class="neon-font">0.00M</span>
+                        <span id="formula-m" class="neon-font">$0.00M</span>
                         <span>×</span>
                         <span id="formula-rate" class="neon-font" style="color: #ffa751;">0 đ</span>
                         <span>=</span>
@@ -1375,7 +1398,7 @@
                 true,
                 function() {
                     database.ref(`live_status/${accKey}`).remove().then(() => {
-                        showToast(`Đã xóa [${accKey}] thành công!`, "🗑️");
+                        showToast(`Đã xóa [${accKey}] thành công!`, "🗑");
                     });
                 }
             );
@@ -1533,13 +1556,13 @@
             const rate = getNumericRate();
             const totalVND = globalWithdrawnM * rate;
             
-            animateNumber('total-withdrawn', globalWithdrawnM, 2, '', 'm', 750, fromZero);
+            animateNumber('total-withdrawn', globalWithdrawnM, 2, '$', 'm', 750, fromZero);
             animateNumber('vnd-total', totalVND, 0, '', ' đ', 850, fromZero);
 
-            document.getElementById('formula-m').textContent = globalWithdrawnM.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'M';
+            document.getElementById('formula-m').textContent = '$' + globalWithdrawnM.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'M';
             document.getElementById('formula-rate').textContent = rate.toLocaleString('vi-VN') + ' đ';
 
-            document.getElementById('withdrawn-b').textContent = (globalWithdrawnM / 1000).toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) + 'B';
+            document.getElementById('withdrawn-b').textContent = '$' + (globalWithdrawnM / 1000).toLocaleString(undefined, {minimumFractionDigits: 3, maximumFractionDigits: 3}) + 'B';
             document.getElementById('rate-per-b').textContent = (rate * 1000).toLocaleString('vi-VN') + ' đ';
         }
 
@@ -1662,7 +1685,7 @@
                                 type: 'time',
                                 time: {
                                     unit: 'minute',
-                                    displayFormats: { minute: 'HH:mm:ss', hour: 'HH:mm' }
+                                    displayFormats: { minute: 'HH:mm', hour: 'HH:mm' }
                                 },
                                 grid: { color: '#131e33' },
                                 ticks: {
@@ -1678,7 +1701,7 @@
                                 ticks: {
                                     color: '#64748b',
                                     font: { family: "'JetBrains Mono', monospace", size: 10 },
-                                    callback: (val) => Number(val).toFixed(1) + 'm/h'
+                                    callback: (val) => '$' + Number(val).toFixed(1) + 'M'
                                 }
                             }
                         },
@@ -1688,7 +1711,7 @@
                                 callbacks: {
                                     label: (ctx) => {
                                         const p = ctx.raw;
-                                        return ` Mở: ${p.o} | Cao: ${p.h} | Thấp: ${p.l} | Đóng: ${p.c} m/h`;
+                                        return ` Mở: $${p.o} | Cao: $${p.h} | Thấp: $${p.l} | Đóng: $${p.c} m/h`;
                                     }
                                 }
                             }
@@ -1703,8 +1726,7 @@
                 const labels = slicedTimes.map(ts => {
                     const d = new Date(ts);
                     return d.getHours().toString().padStart(2, '0') + ':' + 
-                           d.getMinutes().toString().padStart(2, '0') + ':' + 
-                           d.getSeconds().toString().padStart(2, '0');
+                           d.getMinutes().toString().padStart(2, '0');
                 });
 
                 chartInstance = new Chart(ctx, {
@@ -1746,7 +1768,7 @@
                                 ticks: { 
                                     color: '#64748b',
                                     font: { family: "'JetBrains Mono', monospace", size: 10 },
-                                    callback: (val) => Number(val).toLocaleString() + 'm/h'
+                                    callback: (val) => '$' + Number(val).toLocaleString() + 'm/h'
                                 } 
                             }
                         },
@@ -1754,7 +1776,7 @@
                             legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    label: (ctx) => ' Tổng Tốc Độ: +' + Number(ctx.raw).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'm/h'
+                                    label: (ctx) => ' Tổng Tốc Độ: +$' + Number(ctx.raw).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'm/h'
                                 }
                             }
                         }
@@ -1795,7 +1817,7 @@
                                 label: (ctx) => {
                                     const pcts = ctx.dataset.percentages || [];
                                     const p = pcts[ctx.dataIndex] !== undefined ? pcts[ctx.dataIndex] : 0;
-                                    return ` ${ctx.label}: ${Number(ctx.raw).toFixed(2)}m (${p}%)`;
+                                    return ` ${ctx.label}: $${Number(ctx.raw).toFixed(2)}m (${p}%)`;
                                 }
                             }
                         }
@@ -1872,7 +1894,7 @@
                         </div>
                         <div style="text-align: right;">
                             <span class="neon-font" style="color: ${color}; font-weight: 800; font-size: 0.92rem;">${pct}%</span>
-                            <span style="color: var(--text-muted); font-size: 0.78rem; margin-left: 6px;">(${acc.currentIncome.toFixed(2)}m)</span>
+                            <span style="color: var(--text-muted); font-size: 0.78rem; margin-left: 6px;">($${acc.currentIncome.toFixed(2)}m)</span>
                         </div>
                     `;
                     legendBox.appendChild(row);
@@ -1902,18 +1924,38 @@
                 if (!acc.isOffline) activeAccountsCount++;
 
                 const safeKey = key.replace(/[^a-zA-Z0-9]/g, '_');
-                animateNumber(`money-${safeKey}`, acc.currentIncome, 2, '', 'm', 750, true);
+                animateNumber(`money-${safeKey}`, acc.currentIncome, 2, '$', 'm', 750, true);
                 animateNumber(`sells-${safeKey}`, acc.sellsCount, 0, '', ' lượt', 750, true);
-                animateNumber(`speed-${safeKey}`, acc.speedNum, 2, '+', 'm/h', 750, true);
+                animateNumber(`speed-${safeKey}`, acc.speedNum, 2, '+$', 'm/h', 750, true);
             }
 
             const est24hInB = (grandTotalRatePerHour * 24) / 1000;
-            animateNumber('total-revenue', grandTotalRevenue, 2, '', 'm', 800, true);
+            animateNumber('total-revenue', grandTotalRevenue, 2, '$', 'm', 800, true);
             animateNumber('total-sells', grandTotalSells, 0, '', ' lượt', 800, true);
-            animateNumber('total-rate', grandTotalRatePerHour, 2, '+', 'm/h', 800, true);
-            animateNumber('est-24h', est24hInB, 2, '~', 'b/24h', 800, true);
+            animateNumber('total-rate', grandTotalRatePerHour, 2, '+$', 'm/h', 800, true);
+            animateNumber('est-24h', est24hInB, 2, '~$', 'b/24h', 800, true);
             animateNumber('active-accs', activeAccountsCount, 0, '', '', 600, true);
         }
+
+        database.ref('history_logs').limitToLast(360).on('value', (snapshot) => {
+            const logs = snapshot.val();
+            if (!logs) {
+                cloudChartHistory = { timestamps: [], values: [] };
+                rebuildChart();
+                return;
+            }
+
+            const times = [];
+            const vals = [];
+            for (const key in logs) {
+                const item = logs[key];
+                times.push(item.timestamp || Date.now());
+                vals.push(item.speed || 0);
+            }
+
+            cloudChartHistory = { timestamps: times, values: vals };
+            rebuildChart();
+        });
 
         database.ref('payments_history').limitToLast(20).on('value', (snapshot) => {
             const pays = snapshot.val();
@@ -1922,7 +1964,7 @@
 
             if (!pays) {
                 listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem;">Chưa có giao dịch chuyển tiền nào được ghi nhận.</p>';
-                animateNumber('total-withdrawn', 0, 2, '', 'm');
+                animateNumber('total-withdrawn', 0, 2, '$', 'm');
                 globalWithdrawnM = 0;
                 calculateVND();
                 return;
@@ -1948,7 +1990,7 @@
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div class="neon-font neon-cyan-glow" style="font-weight: 700;">+${p.amount_text || (p.amount_m + 'M')}</div>
+                        <div class="neon-font neon-cyan-glow" style="font-weight: 700;">+$${p.amount_text || (p.amount_m + 'M')}</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">${p.time_str || ''}</div>
                     </div>
                 `;
@@ -1981,7 +2023,7 @@
             }
             const totalEl = document.getElementById('total-revenue');
             if (totalEl) {
-                totalEl.textContent = liveTotal.toLocaleString(undefined, {
+                totalEl.textContent = '$' + liveTotal.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 }) + 'm';
@@ -1990,20 +2032,15 @@
             updatePieChartUI();
         }
 
-        // =======================================================
-        // GHI NHẬN TỔNG TỐC ĐỘ TẤT CẢ CÁC ACC VÀO BIỂU ĐỒ
-        // =======================================================
         let lastAggregatedTime = 0;
 
         function recordTotalSpeedToChart(totalSpeed) {
             const now = Date.now();
-            // Ghi nhận điểm tổng tốc độ mỗi 15 giây một lần để tạo dòng lịch sử mượt mà
             if (now - lastAggregatedTime > 15000) {
                 lastAggregatedTime = now;
                 cloudChartHistory.timestamps.push(now);
                 cloudChartHistory.values.push(totalSpeed);
 
-                // Giới hạn bộ nhớ tạm 360 điểm gần nhất
                 if (cloudChartHistory.timestamps.length > 360) {
                     cloudChartHistory.timestamps.shift();
                     cloudChartHistory.values.shift();
@@ -2027,10 +2064,10 @@
 
             if (!data) {
                 container.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center;">Chưa có dữ liệu nào.</p>';
-                animateNumber('total-revenue', 0, 2, '', 'm');
+                animateNumber('total-revenue', 0, 2, '$', 'm');
                 animateNumber('total-sells', 0, 0, '', ' lượt');
-                animateNumber('total-rate', 0, 2, '+', 'm/h');
-                animateNumber('est-24h', 0, 2, '~', 'b/24h');
+                animateNumber('total-rate', 0, 2, '+$', 'm/h');
+                animateNumber('est-24h', 0, 2, '~$', 'b/24h');
                 animateNumber('active-accs', 0, 0);
                 document.getElementById('pie-section').style.display = 'none';
                 return;
@@ -2098,7 +2135,7 @@
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Doanh Thu Treo</span>
-                        <span class="stat-num neon-font neon-cyan-glow" id="${moneyId}">0.00m</span>
+                        <span class="stat-num neon-font neon-cyan-glow" id="${moneyId}">$0.00m</span>
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Số Lần Bán</span>
@@ -2106,14 +2143,14 @@
                     </div>
                     <div class="stat-row">
                         <span class="stat-label">Profit / Giờ</span>
-                        <span class="stat-num neon-font neon-green-glow" id="${speedId}">+0.00m/h</span>
+                        <span class="stat-num neon-font neon-green-glow" id="${speedId}">+$0.00m/h</span>
                     </div>
                 `;
                 container.appendChild(card);
 
-                animateNumber(moneyId, incomeNum, 2, '', 'm');
+                animateNumber(moneyId, incomeNum, 2, '$', 'm');
                 animateNumber(sellsId, sellsNum, 0, '', ' lượt');
-                animateNumber(speedId, moneyPerHour, 2, '+', 'm/h');
+                animateNumber(speedId, moneyPerHour, 2, '+$', 'm/h');
 
                 if (!isCurrentlyOffline) activeAccountsCount++;
 
@@ -2172,7 +2209,7 @@
                             acc.currentIncome += acc.gainPerSec;
                             const moneySpan = document.getElementById(acc.moneyId);
                             if (moneySpan) {
-                                moneySpan.textContent = acc.currentIncome.toLocaleString(undefined, {
+                                moneySpan.textContent = '$' + acc.currentIncome.toLocaleString(undefined, {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2
                                 }) + 'm';
@@ -2185,13 +2222,12 @@
             }
 
             const est24hInB = (grandTotalRatePerHour * 24) / 1000;
-            animateNumber('total-revenue', grandTotalRevenue, 2, '', 'm');
+            animateNumber('total-revenue', grandTotalRevenue, 2, '$', 'm');
             animateNumber('total-sells', grandTotalSells, 0, '', ' lượt');
-            animateNumber('total-rate', grandTotalRatePerHour, 2, '+', 'm/h');
-            animateNumber('est-24h', est24hInB, 2, '~', 'b/24h');
+            animateNumber('total-rate', grandTotalRatePerHour, 2, '+$', 'm/h');
+            animateNumber('est-24h', est24hInB, 2, '~$', 'b/24h');
             animateNumber('active-accs', activeAccountsCount, 0);
 
-            // Nạp tổng tốc độ của toàn bộ dàn acc vào biểu đồ
             recordTotalSpeedToChart(grandTotalRatePerHour);
 
             updatePieChartUI();
