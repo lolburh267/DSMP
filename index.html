@@ -624,7 +624,6 @@
             margin-right: 6px;
         }
         
-        /* STYLE CHO ICON CHART MỚI */
         .line-vector-icon {
             stroke: #00d2ff;
             filter: drop-shadow(0 0 5px rgba(0, 210, 255, 0.45));
@@ -1182,7 +1181,7 @@
                 <!-- BIỂU ĐỒ TỔNG TỐC ĐỘ TẤT CẢ ACC: LINE VS CANDLESTICK -->
                 <div class="chart-section">
                     <div class="chart-header">
-                        <h3 id="chart-main-title">Biến Động Tổng Tốc Độ Cả Dàn Bot (m/h)</h3>
+                        <h3 id="chart-main-title">Total Farm Speed (Line)</h3>
                         
                         <div class="chart-controls-wrap">
                             <!-- Bộ nút chọn loại Biểu đồ đã đổi icon thành Vector -->
@@ -1192,7 +1191,7 @@
                                         <polyline points="3 17 9 11 13 15 21 7"></polyline>
                                         <polyline points="14 7 21 7 21 14"></polyline>
                                     </svg>
-                                    Đường
+                                    Line
                                 </button>
                                 <button class="type-btn" id="btn-type-candle" onclick="setChartType('candlestick')">
                                     <svg class="inline-vector-icon candle-vector-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1201,7 +1200,7 @@
                                         <rect x="7" y="8" width="4" height="6"></rect>
                                         <rect x="13" y="10" width="4" height="8"></rect>
                                     </svg>
-                                    Nến Nhật
+                                    Candlestick
                                 </button>
                             </div>
 
@@ -1361,15 +1360,14 @@
         function openResetChartModal() {
             showCustomModal(
                 "Reset Lịch Sử Biểu Đồ",
-                "Bạn có chắc chắn muốn xóa toàn bộ lịch sử biến động tốc độ trên Firebase Cloud không?",
+                "Bạn có chắc chắn muốn xóa toàn bộ lịch sử biểu đồ trên thiết bị này không?",
                 "🔄",
                 false,
                 function() {
-                    database.ref('history_logs').remove().then(() => {
-                        cloudChartHistory = { timestamps: [], values: [] };
-                        rebuildChart();
-                        showToast("Đã reset biểu đồ thành công!", "🔄");
-                    });
+                    cloudChartHistory = { timestamps: [], values: [] };
+                    localStorage.removeItem('dsmp_chart_history_v2');
+                    rebuildChart();
+                    showToast("Đã reset biểu đồ thành công!", "🔄");
                 }
             );
         }
@@ -1377,12 +1375,11 @@
         function openResetAllModal() {
             showCustomModal(
                 "Reset Toàn Bộ Dữ Liệu",
-                "Hành động này sẽ XÓA SẠCH Live Status, Lịch sử tốc độ và Lịch sử chuyển tiền trên Firebase. Bạn có chắc không?",
+                "Hành động này sẽ XÓA SẠCH Live Status và Lịch sử chuyển tiền trên Firebase. Bạn có chắc không?",
                 "⚠",
                 true,
                 function() {
                     database.ref('live_status').remove();
-                    database.ref('history_logs').remove();
                     database.ref('payments_history').remove().then(() => {
                         showToast("Đã dọn dẹp sạch toàn bộ dữ liệu!", "🗑");
                     });
@@ -1519,7 +1516,14 @@
         let pieChartInstance = null;
         let currentChartType = 'line';
         let maxDataPoints = 30;
+        
+        // Chuyển sang lưu trữ Local Storage để giữ đường tổng lịch sử cho tất cả acc
         let cloudChartHistory = { timestamps: [], values: [] };
+        try {
+            const savedHist = localStorage.getItem('dsmp_chart_history_v2');
+            if (savedHist) cloudChartHistory = JSON.parse(savedHist);
+        } catch(e){}
+
         let globalWithdrawnM = 0;
 
         const ACC_COLORS = ['#00d2ff', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#3b82f6'];
@@ -1581,12 +1585,11 @@
             document.getElementById('btn-type-candle').classList.toggle('active', type === 'candlestick');
             
             document.getElementById('chart-main-title').textContent = 
-                type === 'candlestick' ? "Biểu Đồ Nến Nhật - Tổng Tốc Độ Cả Dàn Bot (Candlestick)" : "Biến Động Tổng Tốc Độ Cả Dàn Bot (m/h)";
+                type === 'candlestick' ? "Total Farm Speed (Candlestick)" : "Total Farm Speed (Line)";
 
             rebuildChart();
         }
 
-        // TẠO NẾN TỔNG HỢP VỚI THÂN VÀ BÓNG NẾN RÕ RÀNG
         function generateCandles(timestamps, values) {
             const candleList = [];
             if (values.length === 0) return candleList;
@@ -1639,21 +1642,16 @@
             const slicedTimes = cloudChartHistory.timestamps.slice(-maxDataPoints);
             const slicedVals = cloudChartHistory.values.slice(-maxDataPoints);
 
-            // TÍNH TOÁN BIÊN ĐỘ TRỤC Y TỰ ĐỘNG CHUẨN XÁC
-            let calculatedMin = 0;
-            let calculatedMax = 50;
+            let calculatedMin = undefined;
+            let calculatedMax = undefined;
 
             if (slicedVals.length > 0) {
                 const realMin = Math.min(...slicedVals);
                 const realMax = Math.max(...slicedVals);
 
-                calculatedMin = Math.max(0, Math.floor(realMin * 0.8));
-                calculatedMax = Math.ceil(realMax * 1.25);
-
-                if (calculatedMax - calculatedMin < 15) {
-                    calculatedMin = Math.max(0, calculatedMin - 10);
-                    calculatedMax = calculatedMax + 10;
-                }
+                const padding = Math.max((realMax - realMin) * 0.5, 5); 
+                calculatedMin = Math.max(0, realMin - padding);
+                calculatedMax = realMax + padding;
             }
 
             if (currentChartType === 'candlestick') {
@@ -1761,14 +1759,15 @@
                                 } 
                             },
                             y: { 
-                                beginAtZero: true,
+                                position: 'right',
+                                beginAtZero: false,
                                 min: calculatedMin,
                                 max: calculatedMax,
                                 grid: { color: '#131e33' }, 
                                 ticks: { 
                                     color: '#64748b',
                                     font: { family: "'JetBrains Mono', monospace", size: 10 },
-                                    callback: (val) => '$' + Number(val).toLocaleString() + 'm/h'
+                                    callback: (val) => '$' + Number(val).toLocaleString() + 'M'
                                 } 
                             }
                         },
@@ -1937,26 +1936,6 @@
             animateNumber('active-accs', activeAccountsCount, 0, '', '', 600, true);
         }
 
-        database.ref('history_logs').limitToLast(360).on('value', (snapshot) => {
-            const logs = snapshot.val();
-            if (!logs) {
-                cloudChartHistory = { timestamps: [], values: [] };
-                rebuildChart();
-                return;
-            }
-
-            const times = [];
-            const vals = [];
-            for (const key in logs) {
-                const item = logs[key];
-                times.push(item.timestamp || Date.now());
-                vals.push(item.speed || 0);
-            }
-
-            cloudChartHistory = { timestamps: times, values: vals };
-            rebuildChart();
-        });
-
         database.ref('payments_history').limitToLast(20).on('value', (snapshot) => {
             const pays = snapshot.val();
             const listEl = document.getElementById('payments-list');
@@ -2035,6 +2014,8 @@
         let lastAggregatedTime = 0;
 
         function recordTotalSpeedToChart(totalSpeed) {
+            if (totalSpeed <= 0) return;
+
             const now = Date.now();
             if (now - lastAggregatedTime > 15000) {
                 lastAggregatedTime = now;
@@ -2045,7 +2026,7 @@
                     cloudChartHistory.timestamps.shift();
                     cloudChartHistory.values.shift();
                 }
-
+                localStorage.setItem('dsmp_chart_history_v2', JSON.stringify(cloudChartHistory));
                 rebuildChart();
             }
         }
@@ -2229,7 +2210,6 @@
             animateNumber('active-accs', activeAccountsCount, 0);
 
             recordTotalSpeedToChart(grandTotalRatePerHour);
-
             updatePieChartUI();
         });
 
