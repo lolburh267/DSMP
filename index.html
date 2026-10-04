@@ -1134,7 +1134,7 @@
                         </div>
                     </div>
                     <div class="metric-card">
-                        <div class="metric-title">Tốc Độ Trung Bình</div>
+                        <div class="metric-title">Tốc Độ Trung Bình (Tổng Toàn Dàn)</div>
                         <div class="metric-value neon-font neon-green-glow" id="total-rate">+0.00m/h</div>
                         <div class="metric-sub">
                             <span>Dự kiến:</span>
@@ -1167,13 +1167,12 @@
                     </div>
                 </div>
 
-                <!-- BIỂU ĐỒ TỐC ĐỘ: LINE VS CANDLESTICK -->
+                <!-- BIỂU ĐỒ TỔNG TỐC ĐỘ TẤT CẢ ACC: LINE VS CANDLESTICK -->
                 <div class="chart-section">
                     <div class="chart-header">
-                        <h3 id="chart-main-title">Biến Động Tốc Độ Trung Bình (m/h)</h3>
+                        <h3 id="chart-main-title">Biến Động Tổng Tốc Độ Cả Dàn Bot (m/h)</h3>
                         
                         <div class="chart-controls-wrap">
-                            <!-- Bộ nút chọn loại Biểu đồ -->
                             <div class="chart-type-toggle">
                                 <button class="type-btn active" id="btn-type-line" onclick="setChartType('line')">
                                     📈 Đường
@@ -1183,7 +1182,6 @@
                                 </button>
                             </div>
 
-                            <!-- Mốc thời gian -->
                             <div class="timeframe-controls">
                                 <button class="tf-btn active" onclick="setTimeframe('live', 30, this)">LIVE (30p)</button>
                                 <button class="tf-btn" onclick="setTimeframe('1h', 60, this)">1H</button>
@@ -1377,7 +1375,7 @@
                 true,
                 function() {
                     database.ref(`live_status/${accKey}`).remove().then(() => {
-                        showToast(`Đã xóa [${accKey}] thành công!`, "🗑️️");
+                        showToast(`Đã xóa [${accKey}] thành công!`, "🗑️");
                     });
                 }
             );
@@ -1496,7 +1494,7 @@
         const accountStates = {};
         let chartInstance = null;
         let pieChartInstance = null;
-        let currentChartType = 'line'; // 'line' hoặc 'candlestick'
+        let currentChartType = 'line';
         let maxDataPoints = 30;
         let cloudChartHistory = { timestamps: [], values: [] };
         let globalWithdrawnM = 0;
@@ -1560,17 +1558,16 @@
             document.getElementById('btn-type-candle').classList.toggle('active', type === 'candlestick');
             
             document.getElementById('chart-main-title').textContent = 
-                type === 'candlestick' ? "Biểu Đồ Nến Nhật - Tốc Độ Farm (Candlestick)" : "Biến Động Tốc Độ Trung Bình (m/h)";
+                type === 'candlestick' ? "Biểu Đồ Nến Nhật - Tổng Tốc Độ Cả Dàn Bot (Candlestick)" : "Biến Động Tổng Tốc Độ Cả Dàn Bot (m/h)";
 
             rebuildChart();
         }
 
-        // TẠO NẾN VỚI THÂN VÀ BÓNG NẾN RÕ RÀNG
+        // TẠO NẾN TỔNG HỢP VỚI THÂN VÀ BÓNG NẾN RÕ RÀNG
         function generateCandles(timestamps, values) {
             const candleList = [];
             if (values.length === 0) return candleList;
 
-            // Nhóm 2 điểm thành 1 cây nến để tạo thân nến
             const step = Math.max(1, Math.min(3, Math.floor(values.length / 15)));
 
             for (let i = 0; i < values.length; i += step) {
@@ -1581,9 +1578,8 @@
                 let o = chunkVals[0];
                 let c = chunkVals[chunkVals.length - 1];
 
-                // Nếu các điểm hoàn toàn bằng nhau, tạo thân nến nhỏ để không bị bẹt thành dấu gạch ngang
                 if (o === c) {
-                    const slightOffset = Math.max(0.08, o * 0.003);
+                    const slightOffset = Math.max(0.15, o * 0.005);
                     if (i % 2 === 0) {
                         o = o - slightOffset;
                         c = c + slightOffset;
@@ -1593,7 +1589,7 @@
                     }
                 }
 
-                const wickMargin = Math.max(0.12, Math.max(o, c) * 0.005);
+                const wickMargin = Math.max(0.3, Math.max(o, c) * 0.008);
                 const h = Math.max(...chunkVals, Math.max(o, c) + wickMargin);
                 const l = Math.min(...chunkVals, Math.max(0, Math.min(o, c) - wickMargin));
 
@@ -1622,20 +1618,18 @@
 
             // TÍNH TOÁN BIÊN ĐỘ TRỤC Y TỰ ĐỘNG CHUẨN XÁC
             let calculatedMin = 0;
-            let calculatedMax = 35;
+            let calculatedMax = 50;
 
             if (slicedVals.length > 0) {
                 const realMin = Math.min(...slicedVals);
                 const realMax = Math.max(...slicedVals);
 
-                // Cho trục Y bắt đầu từ 0 nếu tốc độ gần 0, hoặc hạ thấp hơn min để biểu đồ có không gian dao động
-                calculatedMin = Math.max(0, Math.floor(realMin * 0.85));
-                calculatedMax = Math.ceil(realMax * 1.18);
+                calculatedMin = Math.max(0, Math.floor(realMin * 0.8));
+                calculatedMax = Math.ceil(realMax * 1.25);
 
-                // Đảm bảo khoảng cách tối thiểu giữa Min và Max
-                if (calculatedMax - calculatedMin < 8) {
-                    calculatedMin = Math.max(0, calculatedMin - 5);
-                    calculatedMax = calculatedMax + 5;
+                if (calculatedMax - calculatedMin < 15) {
+                    calculatedMin = Math.max(0, calculatedMin - 10);
+                    calculatedMax = calculatedMax + 10;
                 }
             }
 
@@ -1646,11 +1640,11 @@
                     type: 'candlestick',
                     data: {
                         datasets: [{
-                            label: 'Tốc độ Farm (m/h)',
+                            label: 'Tổng Tốc Độ Farm (m/h)',
                             data: candleData,
                             color: {
-                                up: '#10b981',         // Nến xanh tăng
-                                down: '#ef4444',       // Nến đỏ giảm
+                                up: '#10b981',
+                                down: '#ef4444',
                                 unchanged: '#38bdf8'
                             },
                             borderColor: {
@@ -1702,7 +1696,6 @@
                     }
                 });
             } else {
-                // CHẾ ĐỘ BIỂU ĐỒ LINE
                 const gradient = ctx.createLinearGradient(0, 0, 0, 260);
                 gradient.addColorStop(0, 'rgba(0, 210, 255, 0.35)');
                 gradient.addColorStop(1, 'rgba(0, 210, 255, 0.0)');
@@ -1719,7 +1712,7 @@
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Tốc Độ Trung Bình (m/h)',
+                            label: 'Tổng Tốc Độ Trung Bình (m/h)',
                             data: slicedVals,
                             borderColor: '#00d2ff',
                             backgroundColor: gradient,
@@ -1761,7 +1754,7 @@
                             legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    label: (ctx) => ' Tốc độ: +' + Number(ctx.raw).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'm/h'
+                                    label: (ctx) => ' Tổng Tốc Độ: +' + Number(ctx.raw).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + 'm/h'
                                 }
                             }
                         }
@@ -1922,26 +1915,6 @@
             animateNumber('active-accs', activeAccountsCount, 0, '', '', 600, true);
         }
 
-        database.ref('history_logs').limitToLast(360).on('value', (snapshot) => {
-            const logs = snapshot.val();
-            if (!logs) {
-                cloudChartHistory = { timestamps: [], values: [] };
-                rebuildChart();
-                return;
-            }
-
-            const times = [];
-            const vals = [];
-            for (const key in logs) {
-                const item = logs[key];
-                times.push(item.timestamp || Date.now());
-                vals.push(item.speed || 0);
-            }
-
-            cloudChartHistory = { timestamps: times, values: vals };
-            rebuildChart();
-        });
-
         database.ref('payments_history').limitToLast(20).on('value', (snapshot) => {
             const pays = snapshot.val();
             const listEl = document.getElementById('payments-list');
@@ -2015,6 +1988,29 @@
                 odometerCurrentVals['total-revenue'] = liveTotal;
             }
             updatePieChartUI();
+        }
+
+        // =======================================================
+        // GHI NHẬN TỔNG TỐC ĐỘ TẤT CẢ CÁC ACC VÀO BIỂU ĐỒ
+        // =======================================================
+        let lastAggregatedTime = 0;
+
+        function recordTotalSpeedToChart(totalSpeed) {
+            const now = Date.now();
+            // Ghi nhận điểm tổng tốc độ mỗi 15 giây một lần để tạo dòng lịch sử mượt mà
+            if (now - lastAggregatedTime > 15000) {
+                lastAggregatedTime = now;
+                cloudChartHistory.timestamps.push(now);
+                cloudChartHistory.values.push(totalSpeed);
+
+                // Giới hạn bộ nhớ tạm 360 điểm gần nhất
+                if (cloudChartHistory.timestamps.length > 360) {
+                    cloudChartHistory.timestamps.shift();
+                    cloudChartHistory.values.shift();
+                }
+
+                rebuildChart();
+            }
         }
 
         database.ref('live_status').on('value', (snapshot) => {
@@ -2194,6 +2190,9 @@
             animateNumber('total-rate', grandTotalRatePerHour, 2, '+', 'm/h');
             animateNumber('est-24h', est24hInB, 2, '~', 'b/24h');
             animateNumber('active-accs', activeAccountsCount, 0);
+
+            // Nạp tổng tốc độ của toàn bộ dàn acc vào biểu đồ
+            recordTotalSpeedToChart(grandTotalRatePerHour);
 
             updatePieChartUI();
         });
