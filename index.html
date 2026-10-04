@@ -700,7 +700,7 @@
             border-radius: 50%;
         }
 
-        /* Biểu đồ Tốc Độ (Line / Nến Nhật Candlestick) */
+        /* Biểu đồ Tốc Độ */
         .chart-section {
             background: var(--bg-card);
             border: 1px solid var(--border-line);
@@ -724,7 +724,6 @@
             gap: 8px;
         }
 
-        /* Bộ nút đổi kiểu biểu đồ */
         .chart-type-toggle {
             display: flex;
             background: #060a12;
@@ -1168,13 +1167,13 @@
                     </div>
                 </div>
 
-                <!-- BIỂU ĐỒ TỐC ĐỘ: HỖ TRỢ CHUYỂN ĐỔI LINE / CANDLESTICK (NẾN NHẬT) -->
+                <!-- BIỂU ĐỒ TỐC ĐỘ: LINE VS CANDLESTICK -->
                 <div class="chart-section">
                     <div class="chart-header">
                         <h3 id="chart-main-title">Biến Động Tốc Độ Trung Bình (m/h)</h3>
                         
                         <div class="chart-controls-wrap">
-                            <!-- Bộ nút chọn loại Biểu đồ: Line vs Nến Nhật -->
+                            <!-- Bộ nút chọn loại Biểu đồ -->
                             <div class="chart-type-toggle">
                                 <button class="type-btn active" id="btn-type-line" onclick="setChartType('line')">
                                     📈 Đường
@@ -1378,7 +1377,7 @@
                 true,
                 function() {
                     database.ref(`live_status/${accKey}`).remove().then(() => {
-                        showToast(`Đã xóa [${accKey}] thành công!`, "🗑️");
+                        showToast(`Đã xóa [${accKey}] thành công!`, "🗑️️");
                     });
                 }
             );
@@ -1553,9 +1552,6 @@
             rebuildChart();
         }
 
-        // ==========================================
-        // CHUYỂN ĐỔI CHẾ ĐỘ BIỂU ĐỒ LINE VS NẾN NHẬT
-        // ==========================================
         function setChartType(type) {
             if (currentChartType === type) return;
             currentChartType = type;
@@ -1569,27 +1565,44 @@
             rebuildChart();
         }
 
-        // Tạo nến (OHLC) từ danh sách điểm liên tiếp
+        // TẠO NẾN VỚI THÂN VÀ BÓNG NẾN RÕ RÀNG
         function generateCandles(timestamps, values) {
             const candleList = [];
-            const step = Math.max(1, Math.floor(values.length / 20)); // Nhóm 1 - 3 mốc thời gian thành 1 cây nến
+            if (values.length === 0) return candleList;
+
+            // Nhóm 2 điểm thành 1 cây nến để tạo thân nến
+            const step = Math.max(1, Math.min(3, Math.floor(values.length / 15)));
 
             for (let i = 0; i < values.length; i += step) {
                 const chunkVals = values.slice(i, i + step);
                 const chunkTimes = timestamps.slice(i, i + step);
                 if (chunkVals.length === 0) continue;
 
-                const o = chunkVals[0];
-                const c = chunkVals[chunkVals.length - 1];
-                const h = Math.max(...chunkVals);
-                const l = Math.min(...chunkVals);
+                let o = chunkVals[0];
+                let c = chunkVals[chunkVals.length - 1];
+
+                // Nếu các điểm hoàn toàn bằng nhau, tạo thân nến nhỏ để không bị bẹt thành dấu gạch ngang
+                if (o === c) {
+                    const slightOffset = Math.max(0.08, o * 0.003);
+                    if (i % 2 === 0) {
+                        o = o - slightOffset;
+                        c = c + slightOffset;
+                    } else {
+                        o = o + slightOffset;
+                        c = c - slightOffset;
+                    }
+                }
+
+                const wickMargin = Math.max(0.12, Math.max(o, c) * 0.005);
+                const h = Math.max(...chunkVals, Math.max(o, c) + wickMargin);
+                const l = Math.min(...chunkVals, Math.max(0, Math.min(o, c) - wickMargin));
 
                 candleList.push({
                     x: chunkTimes[Math.floor(chunkTimes.length / 2)],
-                    o: o,
-                    h: Math.max(h, Math.max(o, c)),
-                    l: Math.min(l, Math.min(o, c)),
-                    c: c
+                    o: Number(o.toFixed(2)),
+                    h: Number(h.toFixed(2)),
+                    l: Number(l.toFixed(2)),
+                    c: Number(c.toFixed(2))
                 });
             }
             return candleList;
@@ -1606,6 +1619,25 @@
 
             const slicedTimes = cloudChartHistory.timestamps.slice(-maxDataPoints);
             const slicedVals = cloudChartHistory.values.slice(-maxDataPoints);
+
+            // TÍNH TOÁN BIÊN ĐỘ TRỤC Y TỰ ĐỘNG CHUẨN XÁC
+            let calculatedMin = 0;
+            let calculatedMax = 35;
+
+            if (slicedVals.length > 0) {
+                const realMin = Math.min(...slicedVals);
+                const realMax = Math.max(...slicedVals);
+
+                // Cho trục Y bắt đầu từ 0 nếu tốc độ gần 0, hoặc hạ thấp hơn min để biểu đồ có không gian dao động
+                calculatedMin = Math.max(0, Math.floor(realMin * 0.85));
+                calculatedMax = Math.ceil(realMax * 1.18);
+
+                // Đảm bảo khoảng cách tối thiểu giữa Min và Max
+                if (calculatedMax - calculatedMin < 8) {
+                    calculatedMin = Math.max(0, calculatedMin - 5);
+                    calculatedMax = calculatedMax + 5;
+                }
+            }
 
             if (currentChartType === 'candlestick') {
                 const candleData = generateCandles(slicedTimes, slicedVals);
@@ -1645,12 +1677,14 @@
                                 }
                             },
                             y: {
-                                position: 'right', // Căn phải chuẩn sàn tài chính
+                                position: 'right',
+                                min: calculatedMin,
+                                max: calculatedMax,
                                 grid: { color: '#131e33' },
                                 ticks: {
                                     color: '#64748b',
                                     font: { family: "'JetBrains Mono', monospace", size: 10 },
-                                    callback: (val) => '$' + Number(val).toFixed(1) + 'M'
+                                    callback: (val) => Number(val).toFixed(1) + 'm/h'
                                 }
                             }
                         },
@@ -1660,7 +1694,7 @@
                                 callbacks: {
                                     label: (ctx) => {
                                         const p = ctx.raw;
-                                        return ` O: ${p.o.toFixed(2)} | H: ${p.h.toFixed(2)} | L: ${p.l.toFixed(2)} | C: ${p.c.toFixed(2)}m/h`;
+                                        return ` Mở: ${p.o} | Cao: ${p.h} | Thấp: ${p.l} | Đóng: ${p.c} m/h`;
                                     }
                                 }
                             }
@@ -1668,7 +1702,7 @@
                     }
                 });
             } else {
-                // CHẾ ĐỘ LINE MẶC ĐỊNH
+                // CHẾ ĐỘ BIỂU ĐỒ LINE
                 const gradient = ctx.createLinearGradient(0, 0, 0, 260);
                 gradient.addColorStop(0, 'rgba(0, 210, 255, 0.35)');
                 gradient.addColorStop(1, 'rgba(0, 210, 255, 0.0)');
@@ -1712,6 +1746,9 @@
                                 } 
                             },
                             y: { 
+                                beginAtZero: true,
+                                min: calculatedMin,
+                                max: calculatedMax,
                                 grid: { color: '#131e33' }, 
                                 ticks: { 
                                     color: '#64748b',
@@ -1885,7 +1922,6 @@
             animateNumber('active-accs', activeAccountsCount, 0, '', '', 600, true);
         }
 
-        // Firebase Cloud history_logs
         database.ref('history_logs').limitToLast(360).on('value', (snapshot) => {
             const logs = snapshot.val();
             if (!logs) {
